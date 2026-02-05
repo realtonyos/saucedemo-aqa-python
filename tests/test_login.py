@@ -1,174 +1,130 @@
-from __future__ import annotations
-from typing import Dict, Any
 import pytest
 import allure
-from selenium.common.exceptions import TimeoutException
 from selenium.webdriver.common.by import By
 from pages.login_page import LoginPage
-from utils.config import Config, UserCredentials
+from utils.config import Config
 
 
-@allure.epic("Тесты авторизации")
-@allure.feature("Логин на сайте Saucedemo")
+@allure.epic("Authorization Tests")
+@allure.feature("Saucedemo Login")
 class TestLogin:
-    """
-    Класс тестов для проверки функциональности логина.
-    """
-    
-    @allure.story("Успешный логин")
-    @allure.title("Успешный вход с корректными учетными данными")
+    """Test class for login functionality."""
+
+    @allure.story("Successful Login")
+    @allure.title("Login with valid credentials")
     @allure.severity(allure.severity_level.CRITICAL)
     @pytest.mark.login
     @pytest.mark.smoke
-    def test_successful_login(
-        self, 
-        login_page: LoginPage, 
-        test_data: Dict[str, Any]
-    ) -> None:
-        """
-        Тест успешного входа с валидными учетными данными.
-        
-        Args:
-            login_page: Фикстура страницы логина
-            test_data: Фикстура с тестовыми данными
-        """
-        with allure.step("Выполнить вход с valid credentials"):
-            username: str = test_data["valid_username"]
-            password: str = test_data["valid_password"]
-            login_page.login(username, password)
-        
-        with allure.step("Проверить редирект на страницу инвентаря"):
+    def test_successful_login(self, login_page: LoginPage,
+                              test_data: dict) -> None:
+        """Test successful login with valid credentials."""
+        with allure.step("Login with valid credentials"):
+            login_page.login(
+                test_data["valid_username"],
+                test_data["valid_password"]
+            )
+
+        with allure.step("Verify redirect to inventory page"):
             assert login_page.is_on_inventory_page(), \
-                "Не произошел переход на страницу инвентаря"
-        
-        with allure.step("Проверить что URL правильный"):
-            current_url: str = login_page.get_current_url()
-            expected_url: str = "https://www.saucedemo.com/inventory.html"
-            assert current_url == expected_url, \
-                f"Некорректный URL после входа: {current_url}"
-    
-    @allure.story("Неудачный логин")
-    @allure.title("Вход с неверным паролем")
+                "No redirect to inventory"
+
+        with allure.step("Verify correct URL"):
+            current_url = login_page.get_current_url()
+            expected = login_page.INVENTORY_URL
+            assert current_url == expected, "Wrong URL after login"
+
+    @allure.story("Failed Login")
+    @allure.title("Login with invalid password")
     @allure.severity(allure.severity_level.NORMAL)
     @pytest.mark.login
     @pytest.mark.regression
-    def test_invalid_password_login(
-        self, 
-        login_page: LoginPage, 
-        test_data: Dict[str, Any]
-    ) -> None:
-        """
-        Тест входа с неверным паролем.
-        
-        Args:
-            login_page: Фикстура страницы логина
-            test_data: Фикстура с тестовыми данными
-        """
-        with allure.step("Выполнить вход с неверным паролем"):
-            username: str = test_data["valid_username"]
-            invalid_password: str = test_data["invalid_password"]
-            login_page.login(username, invalid_password)
-        
-        with allure.step("Проверить сообщение об ошибке"):
-            error_text: str = login_page.get_error_message()
-            assert "Username and password do not match" in error_text, \
-                f"Неверное сообщение об ошибке: {error_text}"
-        
-        with allure.step("Проверить что остались на странице логина"):
+    def test_invalid_password_login(self, login_page: LoginPage,
+                                    test_data: dict) -> None:
+        """Test login with wrong password."""
+        with allure.step("Login with wrong password"):
+            login_page.login(
+                test_data["valid_username"],
+                test_data["invalid_password"]
+            )
+
+        with allure.step("Verify error message"):
+            error = login_page.get_error_message()
+            expected = "Username and password do not match"
+            assert expected in error, f"Wrong error message: {error}"
+
+        with allure.step("Verify still on login page"):
             assert not login_page.is_on_inventory_page(), \
-                "Произошел переход на страницу инвентаря при неверном пароле"
-    
-    @allure.story("Логин заблокированного пользователя")
-    @allure.title("Вход заблокированного пользователя")
+                "Redirected to inventory with wrong password"
+
+    @allure.story("Locked User Login")
+    @allure.title("Login with locked user")
     @allure.severity(allure.severity_level.NORMAL)
     @pytest.mark.login
     @pytest.mark.regression
-    def test_locked_out_user_login(
-        self, 
-        login_page: LoginPage, 
-        test_data: Dict[str, Any]
-    ) -> None:
-        """
-        Тест входа заблокированного пользователя.
-        
-        Args:
-            login_page: Фикстура страницы логина
-            test_data: Фикстура с тестовыми данными
-        """
-        with allure.step("Выполнить вход заблокированным пользователем"):
-            locked_username: str = test_data["locked_username"]
-            password: str = test_data["valid_password"]
-            login_page.login(locked_username, password)
-        
-        with allure.step("Проверить сообщение об ошибке блокировки"):
-            error_text: str = login_page.get_error_message()
-            assert "Sorry, this user has been locked out" in error_text, \
-                f"Неверное сообщение об ошибке блокировки: {error_text}"
-    
-    @allure.story("Логин с пустыми полями")
-    @allure.title("Вход с пустыми учетными данными")
+    def test_locked_out_user_login(self, login_page: LoginPage,
+                                   test_data: dict) -> None:
+        """Test login with locked user."""
+        with allure.step("Login with locked user"):
+            login_page.login(
+                test_data["locked_username"],
+                test_data["valid_password"]
+            )
+
+        with allure.step("Verify lock error message"):
+            error = login_page.get_error_message()
+            expected = "Sorry, this user has been locked out"
+            assert expected in error, f"Wrong lock error: {error}"
+
+    @allure.story("Empty Fields Login")
+    @allure.title("Login with empty credentials")
     @allure.severity(allure.severity_level.NORMAL)
     @pytest.mark.login
     @pytest.mark.regression
     def test_empty_fields_login(self, login_page: LoginPage) -> None:
-        """
-        Тест входа с пустыми полями.
-        
-        Args:
-            login_page: Фикстура страницы логина
-        """
-        with allure.step("Кликнуть кнопку логина без ввода данных"):
+        """Test login with empty fields."""
+        with allure.step("Click login without entering data"):
             login_page.click_element(login_page.LOGIN_BUTTON)
-        
-        with allure.step("Проверить сообщение об ошибке"):
-            error_text: str = login_page.get_error_message()
-            assert "Username is required" in error_text, \
-                f"Неверное сообщение об ошибке пустых полей: {error_text}"
-    
-    @allure.story("Логин пользователя с задержками")
-    @allure.title("Вход пользователя performance_glitch_user")
+
+        with allure.step("Verify required field error"):
+            error = login_page.get_error_message()
+            expected = "Username is required"
+            assert expected in error, f"Wrong empty field error: {error}"
+
+    @allure.story("Performance User Login")
+    @allure.title("Login with performance glitch user")
     @allure.severity(allure.severity_level.NORMAL)
     @pytest.mark.login
     @pytest.mark.regression
-    def test_performance_glitch_user_login(
-        self, 
-        login_page: LoginPage, 
-        test_data: Dict[str, Any]
-    ) -> None:
-        """
-        Тест входа пользователя с возможными задержками.
-        
-        Args:
-            login_page: Фикстура страницы логина
-            test_data: Фикстура с тестовыми данными
-        """
-        with allure.step("Выполнить вход пользователем с задержками"):
-            performance_username: str = test_data["performance_username"]
-            password: str = test_data["valid_password"]
-            login_page.login(performance_username, password)
-        
-        with allure.step("Подождать и проверить редирект"):
+    def test_performance_glitch_user_login(self, login_page: LoginPage,
+                                           test_data: dict) -> None:
+        """Test login with performance glitch user."""
+        with allure.step("Login with performance user"):
+            login_page.login(
+                test_data["performance_username"],
+                test_data["valid_password"]
+            )
+
+        with allure.step("Wait for redirect and verify"):
+            from selenium.webdriver.support.ui import WebDriverWait
+            from selenium.common.exceptions import TimeoutException
+
             try:
-                from selenium.webdriver.support.ui import WebDriverWait
                 login_page.wait = WebDriverWait(login_page.driver, 15)
                 assert login_page.is_on_inventory_page(), \
-                    "Не произошел переход на страницу инвентаря для performance_glitch_user"
+                    "No redirect for performance user"
             except TimeoutException:
                 login_page.take_screenshot("performance_glitch_timeout")
-                raise AssertionError(
-                    "Страница инвентаря не загрузилась в течение 15 секунд"
-                )
-        
-        with allure.step("Проверить элементы на странице"):
+                raise AssertionError("Inventory page didn't load in 15s")
+
+        with allure.step("Verify page elements"):
             assert "inventory" in login_page.get_current_url(), \
-                "URL не содержит 'inventory'"
-            
-            inventory_container: tuple[By, str] = (By.ID, "inventory_container")
+                "URL missing 'inventory'"
+            inventory_container = (By.ID, "inventory_container")
             assert login_page.is_element_displayed(inventory_container), \
-                "Контейнер инвентаря не отображается"
-    
-    @allure.story("Параметризованные тесты логина")
-    @allure.title("Вход разными типами пользователей через конфиг")
+                "Inventory container not displayed"
+
+    @allure.story("Parameterized Login Tests")
+    @allure.title("Login with different user types via config")
     @allure.severity(allure.severity_level.NORMAL)
     @pytest.mark.login
     @pytest.mark.parametrize("user_type, expected_success", [
@@ -176,34 +132,21 @@ class TestLogin:
         ("locked", False),
         ("performance", True),
     ])
-    def test_login_with_user_types(
-        self, 
-        login_page: LoginPage, 
-        user_type: str, 
-        expected_success: bool
-    ) -> None:
-        """
-        Параметризованный тест входа разными типами пользователей.
-        
-        Args:
-            login_page: Фикстура страницы логина
-            user_type: Тип пользователя из конфига
-            expected_success: Ожидаемый результат (True - успех, False - ошибка)
-        """
-        with allure.step(f"Получить учетные данные для {user_type}"):
-            user_credentials: UserCredentials = Config.get_user_credentials(user_type)
-        
-        with allure.step(f"Выполнить вход как {user_type}"):
-            login_page.login(
-                user_credentials["username"], 
-                user_credentials["password"]
-            )
-        
+    def test_login_with_user_types(self, login_page: LoginPage,
+                                   user_type: str,
+                                   expected_success: bool) -> None:
+        """Parameterized test for different user types."""
+        with allure.step(f"Get credentials for {user_type}"):
+            creds = Config.get_user_credentials(user_type)
+
+        with allure.step(f"Login as {user_type}"):
+            login_page.login(creds["username"], creds["password"])
+
         if expected_success:
-            with allure.step("Проверить успешный вход"):
+            with allure.step("Verify successful login"):
                 assert login_page.is_on_inventory_page(), \
-                    f"Не удалось войти как {user_type}"
+                    f"Failed to login as {user_type}"
         else:
-            with allure.step("Проверить сообщение об ошибке"):
-                error_text: str = login_page.get_error_message()
-                assert error_text, f"Ожидалась ошибка для {user_type}, но ее нет"
+            with allure.step("Verify error message"):
+                assert login_page.get_error_message(), \
+                    f"Expected error for {user_type}, got none"

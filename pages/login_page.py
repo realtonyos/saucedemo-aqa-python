@@ -1,5 +1,5 @@
 from __future__ import annotations
-from typing import Final, Dict, Optional
+from typing import Final
 from selenium.webdriver.remote.webdriver import WebDriver
 from selenium.webdriver.common.by import By
 import allure
@@ -7,157 +7,132 @@ from .base_page import BasePage, Locator
 
 
 class LoginPage(BasePage):
-    """
-    Page Object для страницы логина Saucedemo.
-    """
-    
-    # Константы локаторов с явным указанием типа
+    """Page Object for Saucedemo login page."""
+
+    # Locators
     USERNAME_INPUT: Final[Locator] = (By.ID, "user-name")
     PASSWORD_INPUT: Final[Locator] = (By.ID, "password")
     LOGIN_BUTTON: Final[Locator] = (By.ID, "login-button")
     ERROR_MESSAGE: Final[Locator] = (By.CSS_SELECTOR, "[data-test='error']")
     LOGO: Final[Locator] = (By.CLASS_NAME, "login_logo")
-    
-    # Константы URL
+
+    # URLs
     BASE_URL: Final[str] = "https://www.saucedemo.com/"
     INVENTORY_URL: Final[str] = "https://www.saucedemo.com/inventory.html"
-    
-    # Тестовые пользователи как константы класса
-    TEST_USERS: Final[Dict[str, Dict[str, str]]] = {
+
+    # Test users
+    TEST_USERS: Final[dict] = {
         "standard": {"username": "standard_user", "password": "secret_sauce"},
         "locked": {"username": "locked_out_user", "password": "secret_sauce"},
-        "performance": {"username": "performance_glitch_user", "password": "secret_sauce"},
+        "performance": {
+            "username": "performance_glitch_user",
+            "password": "secret_sauce",
+        },
         "problem": {"username": "problem_user", "password": "secret_sauce"}
     }
 
     def __init__(self, driver: WebDriver) -> None:
-        """
-        Инициализирует страницу логина.
-        
+        """Initialize login page.
+
         Args:
-            driver: Экземпляр WebDriver
+            driver: WebDriver instance
         """
         super().__init__(driver)
         self.driver.get(self.BASE_URL)
 
-    @allure.step("Открыть страницу логина")
+    @allure.step("Open login page")
     def open(self) -> None:
-        """
-        Открывает страницу логина.
-        """
+        """Open login page."""
         self.driver.get(self.BASE_URL)
 
-    @allure.step("Войти с username={username} и password={password}")
+    @allure.step("Login with username={username} and password={password}")
     def login(self, username: str, password: str) -> None:
-        """
-        Выполняет вход с указанными учетными данными.
-        
+        """Perform login with credentials.
+
         Args:
-            username: Имя пользователя
-            password: Пароль
+            username: Username
+            password: Password
         """
         self.enter_text(self.USERNAME_INPUT, username)
         self.enter_text(self.PASSWORD_INPUT, password)
         self.click_element(self.LOGIN_BUTTON)
 
-    @allure.step("Войти как пользователь {user_type}")
+    @allure.step("Login as user {user_type}")
     def login_as_user(self, user_type: str) -> None:
-        """
-        Вход как определенный тип пользователя.
-        
+        """Login as specific user type.
+
         Args:
-            user_type: Тип пользователя ('standard', 'locked', 'performance', 'problem')
-            
+            user_type: User type
+                ('standard', 'locked', 'performance', 'problem')
+
         Raises:
-            KeyError: Если тип пользователя не найден
+            KeyError: If user type not found
         """
         if user_type not in self.TEST_USERS:
-            raise KeyError(f"Неизвестный тип пользователя: {user_type}")
-        
-        user_data: Dict[str, str] = self.TEST_USERS[user_type]
+            raise KeyError(f"Unknown user type: {user_type}")
+
+        user_data = self.TEST_USERS[user_type]
         self.login(user_data["username"], user_data["password"])
 
-    @allure.step("Получить текст ошибки")
+    @allure.step("Get error message text")
     def get_error_message(self) -> str:
-        """
-        Возвращает текст сообщения об ошибке.
-        
+        """Get error message text.
+
         Returns:
-            str: Текст ошибки или пустая строка если ошибки нет
+            Error text or empty string
         """
         return self.get_text(self.ERROR_MESSAGE)
 
-    @allure.step("Проверить отображение логотипа")
+    @allure.step("Check logo display")
     def is_logo_displayed(self) -> bool:
-        """
-        Проверяет отображение логотипа.
-        
+        """Check if logo is displayed.
+
         Returns:
-            bool: True если логотип отображается
+            True if logo is displayed
         """
         return self.is_element_displayed(self.LOGO)
 
-    @allure.step("Проверить отображение поля username")
+    @allure.step("Check username field display")
     def is_username_field_displayed(self) -> bool:
-        """
-        Проверяет отображение поля username.
-        
+        """Check if username field is displayed.
+
         Returns:
-            bool: True если поле отображается
+            True if username field is displayed
         """
         return self.is_element_displayed(self.USERNAME_INPUT)
 
-    @allure.step("Проверить отображение поля password")
+    @allure.step("Check password field display")
     def is_password_field_displayed(self) -> bool:
-        """
-        Проверяет отображение поля password.
-        
+        """Check if password field is displayed.
+
         Returns:
-            bool: True если поле отображается
+            True if password field is displayed
         """
         return self.is_element_displayed(self.PASSWORD_INPUT)
 
-    @allure.step("Проверить что мы на странице инвентаря")
+    @allure.step("Check if on inventory page")
     def is_on_inventory_page(self) -> bool:
-        """
-        Проверяет что текущая страница - страница инвентаря.
-        
+        """Check if current page is inventory.
+
         Returns:
-            bool: True если текущий URL совпадает с INVENTORY_URL
+            True if current URL matches inventory URL
         """
-        current_url: str = self.get_current_url()
-        return current_url == self.INVENTORY_URL
+        return self.get_current_url() == self.INVENTORY_URL
 
-    @allure.step("Получить placeholder поля username")
-    def get_username_placeholder(self) -> Optional[str]:
-        """
-        Возвращает placeholder поля username.
-        
+    @allure.step("Get username placeholder")
+    def get_username_placeholder(self) -> str:
+        """Get username field placeholder.
+
         Returns:
-            Optional[str]: Значение placeholder или None
+            Placeholder value or empty string
         """
-        return self.get_attribute(self.USERNAME_INPUT, "placeholder")
+        return self.get_attribute(self.USERNAME_INPUT, "placeholder") or ""
 
-    @allure.step("Получить placeholder поля password")
-    def get_password_placeholder(self) -> Optional[str]:
-        """
-        Возвращает placeholder поля password.
-        
+    @allure.step("Get password placeholder")
+    def get_password_placeholder(self) -> str:
+        """Get password field placeholder.
+
         Returns:
-            Optional[str]: Значение placeholder или None
+            Placeholder value or empty string
         """
-        return self.get_attribute(self.PASSWORD_INPUT, "placeholder")
-
-    @allure.step("Очистить поле username")
-    def clear_username(self) -> None:
-        """
-        Очищает поле username.
-        """
-        self.enter_text(self.USERNAME_INPUT, "")
-
-    @allure.step("Очистить поле password")
-    def clear_password(self) -> None:
-        """
-        Очищает поле password.
-        """
-        self.enter_text(self.PASSWORD_INPUT, "")
+        return self.get_attribute(self.PASSWORD_INPUT, "placeholder") or ""

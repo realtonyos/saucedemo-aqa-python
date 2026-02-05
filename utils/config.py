@@ -2,21 +2,13 @@ from typing import TypedDict, Final, Dict
 
 
 class UserCredentials(TypedDict):
-    """
-    Типизированный словарь для учетных данных пользователя.
-    
-    Attributes:
-        username: Имя пользователя
-        password: Пароль
-    """
+    """User credentials structure."""
     username: str
     password: str
 
 
 class TestUsers(TypedDict):
-    """
-    Типизированный словарь для пользователей.
-    """
+    """Test users mapping."""
     standard: UserCredentials
     locked: UserCredentials
     performance: UserCredentials
@@ -24,93 +16,70 @@ class TestUsers(TypedDict):
 
 
 class Config:
-    """
-    Конфигурация проекта.
-    """
-    
-    # Базовые настройки
+    """Project configuration."""
+
     BASE_URL: Final[str] = "https://www.saucedemo.com"
     TIMEOUT: Final[int] = 10
     BROWSER: Final[str] = "chrome"
     HEADLESS: Final[bool] = True
-    
-    # Учетные данные пользователей
+
     USERS: Final[TestUsers] = {
-        "standard": {
-            "username": "standard_user",
-            "password": "secret_sauce"
-        },
-        "locked": {
-            "username": "locked_out_user",
-            "password": "secret_sauce"
-        },
+        "standard": {"username": "standard_user", "password": "secret_sauce"},
+        "locked": {"username": "locked_out_user", "password": "secret_sauce"},
         "performance": {
             "username": "performance_glitch_user",
-            "password": "secret_sauce"
+            "password": "secret_sauce",
         },
-        "problem": {
-            "username": "problem_user",
-            "password": "secret_sauce"
-        }
+        "problem": {"username": "problem_user", "password": "secret_sauce"}
     }
-    
-    # Локаторы для разных страниц
+
     LOGIN_PAGE_LOCATORS: Final[Dict[str, str]] = {
         "username": "user-name",
         "password": "password",
         "login_button": "login-button"
     }
-    
-    # Настройки ожиданий
+
     WAIT_TIMEOUTS: Final[Dict[str, int]] = {
         "element": 10,
         "page": 30,
         "ajax": 15
     }
-    
-    # Настройки окружения
+
     ENVIRONMENT: Final[str] = "test"
     SCREENSHOT_ON_FAILURE: Final[bool] = True
     LOG_LEVEL: Final[str] = "INFO"
-    
+
     @classmethod
     def get_user_credentials(cls, user_type: str) -> UserCredentials:
-        """
-        Возвращает учетные данные для указанного типа пользователя.
-        
+        """Get credentials for specified user type.
+
         Args:
-            user_type: Тип пользователя
-            
+            user_type: Type of user
+
         Returns:
-            UserCredentials: Учетные данные пользователя
-            
+            User credentials
+
         Raises:
-            KeyError: Если тип пользователя не найден
+            KeyError: If user type not found
         """
         if user_type not in cls.USERS:
-            raise KeyError(f"Неизвестный тип пользователя: {user_type}. "
-                          f"Доступные: {list(cls.USERS.keys())}")
+            raise KeyError(f"Unknown user type: {user_type}. "
+                           f"Available: {list(cls.USERS.keys())}")
         return cls.USERS[user_type]
-    
+
     @classmethod
     def get_base_url(cls) -> str:
-        """
-        Возвращает базовый URL.
-        
-        Returns:
-            str: Базовый URL
-        """
+        """Get base URL."""
         return cls.BASE_URL
-    
+
     @classmethod
     def get_timeout(cls, timeout_type: str = "element") -> int:
-        """
-        Возвращает таймаут для указанного типа ожидания.
-        
+        """Get timeout for specified wait type.
+
         Args:
-            timeout_type: Тип ожидания ('element', 'page', 'ajax')
-            
+            timeout_type: Wait type ('element', 'page', 'ajax')
+
         Returns:
-            int: Таймаут в секундах
+            Timeout in seconds
         """
         return cls.WAIT_TIMEOUTS.get(timeout_type, cls.TIMEOUT)
